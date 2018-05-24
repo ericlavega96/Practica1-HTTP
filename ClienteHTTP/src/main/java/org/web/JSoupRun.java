@@ -13,27 +13,12 @@ import org.jsoup.select.Elements;
 import javax.print.Doc;
 
 public class JSoupRun {
+    private static String url = "";
+    private static Document doc;
+    private static String PROTOCOLO = "http://";
 
     public static void main(String[] args) throws IOException{
-        String url = "";
-
-        Document doc = Jsoup.connect("http://www.codeacademy.com").get();
-        Document doc1 = Jsoup.parse("<html>\n" +
-                " <head></head>\n" +
-                " <body>\n" +
-                "  <p><span id=\"otro\"><img src=\"\" alt=\"hola\"></span><span id=\"otro\"><img src=\"\" alt=\"Otro\"></span></p> \n" +
-                " </body>\n" +
-                "</html>");
-
-        System.out.println("Número de líneas: " + ContarLineasHTML(doc));
-        System.out.println("Número de párrafos: " + ContarParrafosHTML(doc));
-        System.out.println("Número de imágenes en párrafos: " + ContarImagenesEnParrafosHTML(doc) );
-        System.out.println("Numero de formularios con método GET: " + ContarFormulariosGETHTML(doc));
-        System.out.println("Numero de formularios con método POST: " + ContarFormulariosPOSTHTML(doc));
-        MostrarInputsHTML(doc);
-        EnviarPeticionesFormulariosPOST(doc);
-        //System.out.println(doc.html());
-
+        CapturarUrl();
     }
 
     private static int ContarLineasHTML(Document doc){
@@ -77,9 +62,9 @@ public class JSoupRun {
         Elements inputs = GetInputsHTML(doc);
         if (inputs.size() <= 0)
             return;
-        System.out.println("Inputs y sus tipos");
+        System.out.println("\nInputs y sus tipos");
         for (Element input: inputs) {
-            System.out.println("Campo: " + input.toString() + "\nTipo: " + input.attr("type"));
+            System.out.println("\nCampo: " + input.toString() + "\nTipo: " + input.attr("type"));
         }
     }
 
@@ -92,6 +77,12 @@ public class JSoupRun {
     {
         Document docRequest = null;
         try {
+            if (GetFormulariosPostHTML(doc).size() <= 0){
+                System.out.println("\nNo hay formularios POST");
+                return;
+            }
+
+            int contador = 1;
             for (Element element: GetFormulariosPostHTML(doc)) {
                 String rutaAbs = element.absUrl("action");
 
@@ -100,11 +91,39 @@ public class JSoupRun {
                         .data("asignatura","practica1")
                         .header("matricula","20141329").post();
 
-                System.out.println(docRequest.html());
+                System.out.println("\nRespuesta Formulario "+ contador +":\n\n" + docRequest.html());
+                contador++;
             }
 
         }catch (IOException e){
-            System.out.println("Error al intentar mandar la petición al servidor de " + doc.title());
+            System.out.println("\nError al intentar mandar la petición al servidor de " + url);
         }
+    }
+
+    private static void CapturarUrl(){
+        try{
+            Scanner sc = new Scanner(System.in);
+            System.out.println("Digite la url que quiere analizar: ");
+            url = PROTOCOLO + sc.next();
+            doc = Jsoup.connect(url).get();
+
+            MostrarInformacionURL(doc);
+
+        }
+        catch(IOException e) {
+            System.out.println("\nError al intentar conectarse al servidor de la url " + e.getMessage());
+        }
+
+    }
+
+    private static void MostrarInformacionURL(Document doc)
+    {
+        System.out.println("\nNúmero de líneas: " + ContarLineasHTML(doc));
+        System.out.println("Número de párrafos: " + ContarParrafosHTML(doc));
+        System.out.println("Número de imágenes en párrafos: " + ContarImagenesEnParrafosHTML(doc) );
+        System.out.println("Numero de formularios con método GET: " + ContarFormulariosGETHTML(doc));
+        System.out.println("Numero de formularios con método POST: " + ContarFormulariosPOSTHTML(doc));
+        MostrarInputsHTML(doc);
+        EnviarPeticionesFormulariosPOST(doc);
     }
 }
